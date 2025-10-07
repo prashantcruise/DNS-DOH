@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  cloudflared:
+    image: my-cloudflared:latest          # build from your Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ARCH: amd64                       # change to arm / arm64 if needed
+    container_name: doh
+    environment:
+      # You can add multiple upstreams separated by space
+      CLOUDFLARED_OPTS: >
+        --upstream https://1.1.1.1/dns-query
+        --upstream https://1.0.0.1/dns-query
+        --address 0.0.0.0
+        --port 5053
+    ports:
+      - "5053:5053/udp"
+      - "5053:5053/tcp"
+    restart: unless-stopped
+    networks:
+      - doh-net
+
+networks:
+  doh-net:
+    driver: bridge
+
+
