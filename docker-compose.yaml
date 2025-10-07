@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
       args:
         ARCH: amd64        # Change to arm / arm64 if needed
-    container_name: doh
+    container_name: cf-doh
     environment:
       CLOUDFLARED_OPTS: >
         --upstream https://1.1.1.1/dns-query
