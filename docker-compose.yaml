@@ -2,15 +2,14 @@ version: "3.8"
 
 services:
   cloudflared:
-    image: my-cloudflared:latest          # build from your Dockerfile
+    image: my-cloudflared:latest
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        ARCH: amd64                       # change to arm / arm64 if needed
+        ARCH: amd64        # Change to arm / arm64 if needed
     container_name: doh
     environment:
-      # You can add multiple upstreams separated by space
       CLOUDFLARED_OPTS: >
         --upstream https://1.1.1.1/dns-query
         --upstream https://1.0.0.1/dns-query
@@ -23,8 +22,14 @@ services:
     networks:
       - doh-net
 
+    # ✅ Healthcheck — detects if DoH stops responding
+    healthcheck:
+      test: ["CMD-SHELL", "dig @127.0.0.1 -p 5053 cloudflare.com +short || exit 1"]
+      interval: 60s      # check every 60 seconds
+      timeout: 10s       # fail check if no reply in 10 seconds
+      retries: 3         # mark unhealthy after 3 consecutive failures
+      start_period: 20s  # grace period after container starts
+
 networks:
   doh-net:
     driver: bridge
-
-
