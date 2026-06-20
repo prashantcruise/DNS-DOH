@@ -5,8 +5,10 @@ on:
     branches:
       - main
     tags:
-      - 'v*'          # build when a version tag like v1.0.0 is pushed
+      - 'v*'
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'   # Monthly on the 1st at 00:00 UTC
 
 jobs:
   build-and-push:
@@ -36,7 +38,6 @@ jobs:
       - name: Set image tags
         id: vars
         run: |
-          # Get tag name or default to latest
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
