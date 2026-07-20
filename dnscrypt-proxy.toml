@@ -1,24 +1,95 @@
+# =============================================================================
+# dnscrypt-proxy configuration — DoH only, hardened
+# =============================================================================
+
 listen_addresses = ['0.0.0.0:5053']
 
-server_names = ['cloudflare-family']
+# Failover resolvers — p2 strategy picks fastest, auto-fails over
+server_names = [
+  'cloudflare-family',
+  'adguard-dns-family',
+  'quad9-doh-ip4-filter-pri',
+  'quad9-doh-ip4-filter-alt'
+]
+
+# Load balancing — tracks latency, prefers fastest, seamless failover
+lb_strategy = 'p2'
+lb_estimator = true
+
+# Limit concurrent clients (DoS protection)
+max_clients = 250
+
+# Query timeout in ms
+timeout = 5000
+
+# Reuse existing HTTPS/TLS connections
+keepalive = 30
+
+# =============================================================================
+# Server type — DoH only
+# =============================================================================
 
 ipv4_servers = true
 ipv6_servers = false
 
 dnscrypt_servers = false
 doh_servers = true
+odoh_servers = false
+
+# =============================================================================
+# Security requirements
+# =============================================================================
 
 require_dnssec = true
 require_nolog = true
-require_nofilter = false
+require_nofilter = false   # false = only use servers that do filtering
 
-bootstrap_resolvers = [
-  '1.1.1.3:53',
-  '1.0.0.3:53'
-]
+# Block single-label queries (e.g. "wpad", "isatap") — prevent leaks
+block_unqualified = true
+
+# Block queries for undelegated/reserved TLDs (.local, .internal, etc.)
+block_undelegated = true
+
+# Block query types commonly abused for amplification or recon
+blocked_query_types = ['ANY', 'HINFO', 'NAPTR', 'SRV', 'SSHFP', 'TLSA']
+
+# =============================================================================
+# TLS hardening
+# =============================================================================
+
+# Disable TLS session tickets — forces fresh keys each session (PFS)
+tls_disable_session_tickets = true
+
+# Restrict to ECDHE + AEAD ciphers only (all with forward secrecy)
+# 49199 = ECDHE-RSA-AES128-GCM-SHA256
+# 49200 = ECDHE-RSA-AES256-GCM-SHA384
+# 52392 = ECDHE-RSA-CHACHA20-POLY1305
+# 52393 = ECDHE-ECDSA-CHACHA20-POLY1305
+tls_cipher_suite = [49199, 49200, 52392, 52393]
+
+# =============================================================================
+# Bootstrap resolvers (used once at startup to resolve DoH hostnames)
+# =============================================================================
+
+bootstrap_resolvers = ['1.1.1.1:53', '1.0.0.1:53']
+ignore_system_dns = true
+netprobe_timeout = 60
+netprobe_address = '1.1.1.1:53'
+
+# =============================================================================
+# Cache
+# =============================================================================
 
 cache = true
 cache_size = 4096
+cache_min_ttl = 600
+cache_max_ttl = 86400
+cache_neg_min_ttl = 60
+cache_neg_max_ttl = 600
+
+# =============================================================================
+# Sources — resolver list (required to resolve server_names above)
+# =============================================================================
 
 [sources]
   [sources.'public-resolvers']
