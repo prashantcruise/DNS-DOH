@@ -17,6 +17,10 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 5053/tcp
 EXPOSE 5053/udp
 
+RUN addgroup -S dnsuser && adduser -S -G dnsuser dnsuser \
+    && chown -R dnsuser:dnsuser /config
+USER dnsuser
+
 HEALTHCHECK --interval=120s --timeout=10s --start-period=30s --retries=3 \
 CMD dig @127.0.0.1 -p 5053 cloudflare.com +short || exit 1
 
