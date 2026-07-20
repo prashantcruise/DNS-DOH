@@ -13,8 +13,8 @@ require_nolog = true
 require_nofilter = false
 
 bootstrap_resolvers = [
-  '1.1.1.1:53',
-  '1.0.0.1:53'
+  '1.1.1.3:53',
+  '1.0.0.3:53'
 ]
 
 cache = true
