@@ -50,9 +50,6 @@ block_unqualified = true
 # Block queries for undelegated/reserved TLDs (.local, .internal, etc.)
 block_undelegated = true
 
-# Block query types commonly abused for amplification or recon
-blocked_query_types = ['ANY', 'HINFO', 'NAPTR', 'SRV', 'SSHFP', 'TLSA']
-
 # =============================================================================
 # TLS hardening
 # =============================================================================
