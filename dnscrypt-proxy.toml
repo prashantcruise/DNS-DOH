@@ -8,7 +8,7 @@ listen_addresses = ['0.0.0.0:5053']
 server_names = [
   'cloudflare-family',
   'adguard-dns-family-doh',
-  'quad9-doh-ip4-port443-filter-pri'
+  'quad9-doh-ip4-port443-filter-pri',
   'cleanbrowsing-family-doh',
   'doh-cleanbrowsing-family',
   'mullvad-family-doh'
