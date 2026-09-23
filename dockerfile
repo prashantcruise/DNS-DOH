@@ -10,7 +10,12 @@ RUN apk add --no-cache \
     bind-tools \
     tzdata \
     wget \
+    openssl \
+    curl \
+    && update-ca-certificates \
     && mkdir -p /config
+
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # Download dnscrypt-proxy directly from GitHub (gets full latest version)
 RUN case "${TARGETARCH}" in \
