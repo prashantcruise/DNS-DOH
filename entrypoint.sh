@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -eux
 
 CONFIG=/config/dnscrypt-proxy.toml
 

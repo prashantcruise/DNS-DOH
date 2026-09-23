@@ -7,10 +7,12 @@ listen_addresses = ['0.0.0.0:5053']
 # Failover resolvers — p2 strategy picks fastest, auto-fails over
 server_names = [
   'cloudflare-family',
-  'adguard-dns-family',
-  'quad9-doh-ip4-filter-pri',
-  'quad9-doh-ip4-filter-alt'
-]
+  'adguard-dns-family-doh',
+  'quad9-doh-ip4-port443-filter-pri',
+  'cleanbrowsing-family-doh',
+  'doh-cleanbrowsing-family',
+  'mullvad-family-doh'
+  ]
 
 # Load balancing — tracks latency, prefers fastest, seamless failover
 lb_strategy = 'p2'
