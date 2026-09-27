@@ -6,12 +6,22 @@ listen_addresses = ['0.0.0.0:5053']
 
 # Failover resolvers — p2 strategy picks fastest, auto-fails over
 server_names = [
+  'dnscry.pt-doh-bengaluru-ipv4',
+  'dnscry.pt-doh-mumbai02-ipv4',
   'cloudflare-family',
-  'adguard-dns-family-doh',
+  'adguard-dns-doh',
   'quad9-doh-ip4-port443-filter-pri',
-  'cleanbrowsing-family-doh',
-  'doh-cleanbrowsing-family',
-  'mullvad-family-doh'
+  'doh-cleanbrowsing-security',
+  #'doh-cleanbrowsing-family',
+  'adfilter-adl',
+  #ODoh
+  'anon-cs-singapore',
+  'cs-sydney',
+  'cs-tokyo',
+  'dnscry.pt-anon-bengaluru-ipv4',
+  'dnscry.pt-anon-mumbai02-ipv4',
+  'dnscry.pt-odoh-mumbai02',
+  'dnscry.pt-odoh-bengaluru'
   ]
 
 # Load balancing — tracks latency, prefers fastest, seamless failover
@@ -36,7 +46,7 @@ ipv6_servers = false
 
 dnscrypt_servers = false
 doh_servers = true
-odoh_servers = false
+odoh_servers = true 
 
 # =============================================================================
 # Security requirements
