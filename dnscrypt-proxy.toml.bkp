@@ -1,1 +1,113 @@
 
+# =============================================================================
+# dnscrypt-proxy configuration — DoH only, hardened
+# =============================================================================
+
+listen_addresses = ['0.0.0.0:5053']
+
+# Failover resolvers — p2 strategy picks fastest, auto-fails over
+server_names = [
+  'dnscry.pt-doh-bengaluru-ipv4',
+  'dnscry.pt-doh-mumbai02-ipv4',
+  'cloudflare-family',
+  'adguard-dns-doh',
+  'quad9-doh-ip4-port443-filter-pri',
+  'doh-cleanbrowsing-security',
+  #'doh-cleanbrowsing-family',
+  'adfilter-adl',
+  #ODoh
+  'anon-cs-singapore',
+  'cs-sydney',
+  'cs-tokyo',
+  'dnscry.pt-anon-bengaluru-ipv4',
+  'dnscry.pt-anon-mumbai02-ipv4',
+  'dnscry.pt-odoh-mumbai02',
+  'dnscry.pt-odoh-bengaluru'
+  ]
+
+# Load balancing — tracks latency, prefers fastest, seamless failover
+lb_strategy = 'p2'
+lb_estimator = true
+
+# Limit concurrent clients (DoS protection)
+max_clients = 250
+
+# Query timeout in ms
+timeout = 5000
+
+# Reuse existing HTTPS/TLS connections
+keepalive = 30
+
+# =============================================================================
+# Server type — DoH only
+# =============================================================================
+
+ipv4_servers = true
+ipv6_servers = false
+
+dnscrypt_servers = false
+doh_servers = true
+odoh_servers = true 
+
+# =============================================================================
+# Security requirements
+# =============================================================================
+
+require_dnssec = true
+require_nolog = true
+require_nofilter = false   # false = only use servers that do filtering
+
+# Block single-label queries (e.g. "wpad", "isatap") — prevent leaks
+block_unqualified = true
+
+# Block queries for undelegated/reserved TLDs (.local, .internal, etc.)
+block_undelegated = true
+
+# =============================================================================
+# TLS hardening
+# =============================================================================
+
+# Disable TLS session tickets — forces fresh keys each session (PFS)
+tls_disable_session_tickets = true
+
+# Restrict to ECDHE + AEAD ciphers only (all with forward secrecy)
+# 49199 = ECDHE-RSA-AES128-GCM-SHA256
+# 49200 = ECDHE-RSA-AES256-GCM-SHA384
+# 52392 = ECDHE-RSA-CHACHA20-POLY1305
+# 52393 = ECDHE-ECDSA-CHACHA20-POLY1305
+tls_cipher_suite = [49199, 49200, 52392, 52393]
+
+# =============================================================================
+# Bootstrap resolvers (used once at startup to resolve DoH hostnames)
+# =============================================================================
+
+bootstrap_resolvers = ['1.1.1.1:53', '1.0.0.1:53']
+ignore_system_dns = true
+netprobe_timeout = 60
+netprobe_address = '1.1.1.1:53'
+
+# =============================================================================
+# Cache
+# =============================================================================
+
+cache = true
+cache_size = 4096
+cache_min_ttl = 600
+cache_max_ttl = 86400
+cache_neg_min_ttl = 60
+cache_neg_max_ttl = 600
+
+# =============================================================================
+# Sources — resolver list (required to resolve server_names above)
+# =============================================================================
+
+[sources]
+  [sources.'public-resolvers']
+  urls = [
+    'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md',
+    'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md'
+  ]
+  cache_file = '/config/public-resolvers.md'
+  minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+  refresh_delay = 72
+  prefix = ''
