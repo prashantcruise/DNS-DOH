@@ -1,102 +1,262 @@
 # =============================================================================
-# dnscrypt-proxy configuration — DoH only, hardened
+# dnscrypt-proxy configuration
+# DoH + ODoH only / DNSSEC / No logging / No upstream filtering
+# Pi-hole remains responsible for DNS filtering
 # =============================================================================
 
+
+# =============================================================================
+# Global
+# =============================================================================
+
+# Pi-hole forwards DNS queries here
 listen_addresses = ['0.0.0.0:5053']
 
-# Failover resolvers — p2 strategy picks fastest, auto-fails over
-server_names = [
-  'cloudflare-family',
-  'adguard-dns-family-doh',
-  'quad9-doh-ip4-port443-filter-pri',
-  'cleanbrowsing-family-doh',
-  'doh-cleanbrowsing-family',
-  'mullvad-family-doh'
-  ]
-
-# Load balancing — tracks latency, prefers fastest, seamless failover
-lb_strategy = 'p2'
-lb_estimator = true
-
-# Limit concurrent clients (DoS protection)
+# Maximum simultaneous clients
 max_clients = 250
 
-# Query timeout in ms
-timeout = 5000
-
-# Reuse existing HTTPS/TLS connections
-keepalive = 30
 
 # =============================================================================
-# Server type — DoH only
+# Server Selection
 # =============================================================================
 
+# IPv4 upstreams only
 ipv4_servers = true
+
+# Disable IPv6 upstreams
 ipv6_servers = false
 
+# Disable DNSCrypt
 dnscrypt_servers = false
+
+# Enable DNS-over-HTTPS
 doh_servers = true
-odoh_servers = false
+
+# Enable Oblivious DNS-over-HTTPS
+odoh_servers = true
+
 
 # =============================================================================
 # Security requirements
 # =============================================================================
 
+# Require DNSSEC-capable upstreams
 require_dnssec = true
+
+# Require resolvers that declare that they don't log queries
 require_nolog = true
-require_nofilter = false   # false = only use servers that do filtering
 
-# Block single-label queries (e.g. "wpad", "isatap") — prevent leaks
-block_unqualified = true
+# Require resolvers that don't enforce their own filtering/blocklists
+#
+# IMPORTANT:
+# Pi-hole is the filtering layer in this setup.
+require_nofilter = true
 
-# Block queries for undelegated/reserved TLDs (.local, .internal, etc.)
-block_undelegated = true
+# Don't use explicitly disabled servers
+disabled_server_names = []
+
+
+# =============================================================================
+# Load balancing
+# =============================================================================
+
+# Power-of-two choices.
+#
+# dnscrypt-proxy probes servers and selects between candidates rather than
+# using a fixed round-robin order.
+lb_strategy = 'p2'
+
+# Continuously estimate server performance
+lb_estimator = true
+
+
+# =============================================================================
+# Connection settings
+# =============================================================================
+
+# DNS query timeout
+timeout = 5000
+
+# HTTP/HTTPS connection keepalive
+keepalive = 30
+
+# Do not force TCP globally.
+#
+# DoH uses HTTPS/TCP by default.
+force_tcp = false
+
+# HTTP/3 / DoH3
+#
+# Leave disabled initially. HTTP/2 is more predictable.
+http3 = false
+http3_probe = false
+
 
 # =============================================================================
 # TLS hardening
 # =============================================================================
 
-# Disable TLS session tickets — forces fresh keys each session (PFS)
+# Disable TLS session tickets.
+#
+# This can improve privacy but may increase connection setup cost.
 tls_disable_session_tickets = true
 
-# Restrict to ECDHE + AEAD ciphers only (all with forward secrecy)
-# 49199 = ECDHE-RSA-AES128-GCM-SHA256
-# 49200 = ECDHE-RSA-AES256-GCM-SHA384
-# 52392 = ECDHE-RSA-CHACHA20-POLY1305
-# 52393 = ECDHE-ECDSA-CHACHA20-POLY1305
-tls_cipher_suite = [49199, 49200, 52392, 52393]
+# Restrict TLS cipher suites to ECDHE + AEAD suites.
+tls_cipher_suite = [
+  49199, # ECDHE-RSA-AES128-GCM-SHA256
+  49200, # ECDHE-RSA-AES256-GCM-SHA384
+  52392, # ECDHE-RSA-CHACHA20-POLY1305
+  52393  # ECDHE-ECDSA-CHACHA20-POLY1305
+]
+
 
 # =============================================================================
-# Bootstrap resolvers (used once at startup to resolve DoH hostnames)
+# Bootstrap DNS
 # =============================================================================
 
-bootstrap_resolvers = ['1.1.1.1:53', '1.0.0.1:53']
+# These are ONLY used for bootstrap operations such as resolving upstream
+# DoH hostnames.
+#
+# Normal DNS queries are NOT sent here.
+bootstrap_resolvers = [
+  '1.1.1.1:53',
+  '1.0.0.1:53'
+]
+
+# Don't use the operating system resolver
 ignore_system_dns = true
+
+# Network probing
 netprobe_timeout = 60
 netprobe_address = '1.1.1.1:53'
 
+
 # =============================================================================
-# Cache
+# Resolver certificate refresh
+# =============================================================================
+
+cert_refresh_delay = 240
+
+# Don't immediately reject certificates because of startup clock issues
+# cert_ignore_timestamp = false
+
+
+# =============================================================================
+# Query/cache
 # =============================================================================
 
 cache = true
+
 cache_size = 4096
+
 cache_min_ttl = 600
 cache_max_ttl = 86400
+
 cache_neg_min_ttl = 60
 cache_neg_max_ttl = 600
 
+
 # =============================================================================
-# Sources — resolver list (required to resolve server_names above)
+# Query safety
+# =============================================================================
+
+# Block single-label queries such as:
+#
+#   wpad
+#   isatap
+#
+# This prevents accidental leakage of local names.
+block_unqualified = true
+
+# Block queries for undelegated/reserved TLDs such as:
+#
+#   .local
+#   .internal
+#
+block_undelegated = true
+
+
+# =============================================================================
+# Logging
+# =============================================================================
+
+# Do NOT enable query logging.
+#
+# Pi-hole already has its own query log, and upstream dnscrypt-proxy
+# should not maintain another DNS query log.
+
+# [query_log]
+# file = '/dev/stdout'
+
+
+# =============================================================================
+# Remote resolver sources
 # =============================================================================
 
 [sources]
-  [sources.'public-resolvers']
-  urls = [
-    'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md',
-    'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md'
-  ]
-  cache_file = '/config/public-resolvers.md'
-  minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-  refresh_delay = 72
-  prefix = ''
+
+
+# -----------------------------------------------------------------------------
+# Public DoH resolvers
+# -----------------------------------------------------------------------------
+
+[sources.'public-resolvers']
+
+urls = [
+  'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md',
+  'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md'
+]
+
+cache_file = '/config/public-resolvers.md'
+
+minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+
+refresh_delay = 72
+
+prefix = ''
+
+
+# -----------------------------------------------------------------------------
+# ODoH servers
+# -----------------------------------------------------------------------------
+
+[sources.'odoh-servers']
+
+urls = [
+  'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-servers.md',
+  'https://download.dnscrypt.info/resolvers-list/v3/odoh-servers.md'
+]
+
+cache_file = '/config/odoh-servers.md'
+
+minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+
+refresh_delay = 24
+
+prefix = ''
+
+
+# -----------------------------------------------------------------------------
+# ODoH relays
+# -----------------------------------------------------------------------------
+
+[sources.'odoh-relays']
+
+urls = [
+  'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-relays.md',
+  'https://download.dnscrypt.info/resolvers-list/v3/odoh-relays.md'
+]
+
+cache_file = '/config/odoh-relays.md'
+
+minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+
+refresh_delay = 24
+
+prefix = ''
+
+
+# =============================================================================
+# End
+# =============================================================================
+
