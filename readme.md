@@ -6,27 +6,22 @@ A lightweight Docker image running [dnscrypt-proxy](https://github.com/DNSCrypt/
 
 Pi-hole handles local DNS filtering and ad blocking. dnscrypt-proxy handles encrypted, authenticated upstream resolution over HTTPS.
 
-## Upstream Resolvers (Failover)
+## Upstream Resolvers
 
-| Server | Provider | Filtering | DNSSEC |
-|--------|----------|-----------|--------|
-| `cloudflare-family` | Cloudflare 1.1.1.3 | Malware + Adult | ✓ |
-| `adguard-dns-family` | AdGuard | Malware + Adult | ✓ |
-| `quad9-doh-ip4-filter-pri` | Quad9 | Malware | ✓ |
-| `quad9-doh-ip4-filter-alt` | Quad9 (alt) | Malware | ✓ |
-
-dnscrypt-proxy uses a `p2` (Weighted Power of Two) load balancing strategy — it continuously probes all resolvers, routes to the fastest, and automatically fails over if one goes down.
+Resolvers are loaded from the maintained public DoH and ODoH resolver lists.
+dnscrypt-proxy uses a `p2` (Power of Two Choices) load-balancing strategy to
+probe resolvers, prefer faster healthy servers, and fail over when one is
+unavailable. ODoH resolvers are routed through a compatible ODoH relay selected
+from the maintained relay list.
 
 ## Security Features
 
-- **DoH only** — DNSCrypt and ODoH disabled
+- **Encrypted upstreams** — DoH and ODoH enabled; DNSCrypt disabled
 - **DNSSEC required** — drops responses without valid signatures
 - **No-log servers only** — `require_nolog = true`
-- **Filtering servers only** — `require_nofilter = false`
+- **No-filter servers only** — `require_nofilter = true`; Pi-hole remains the filtering layer
 - **TLS session tickets disabled** — enforces Perfect Forward Secrecy
 - **Restricted cipher suites** — ECDHE + AEAD only (TLS 1.2/1.3)
-- **Blocked query types** — `ANY`, `HINFO`, `NAPTR`, `SRV`, `SSHFP`, `TLSA`
 - **Bootstrap leak prevention** — `ignore_system_dns = true`
-- **Unqualified query blocking** — stops `.local`/single-label leaks
+- **Unqualified query blocking** — blocks single-label and undelegated/reserved TLD queries
 - **Non-root container** — runs as `dnsuser`
-

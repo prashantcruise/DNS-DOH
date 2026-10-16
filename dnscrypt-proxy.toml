@@ -257,6 +257,18 @@ prefix = ''
 
 
 # =============================================================================
-# End
+# ODoH relay selection
 # =============================================================================
 
+[anonymized_dns]
+
+# Use a compatible ODoH relay for every ODoH resolver. dnscrypt-proxy selects
+# an available relay on a distinct network from the resolver.
+routes = [
+  { server_name = '*', via = ['*'] }
+]
+
+
+# =============================================================================
+# End
+# =============================================================================
