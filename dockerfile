@@ -2,7 +2,7 @@
 FROM alpine:3.22 AS builder
 
 ARG TARGETARCH
-ARG DNSCRYPT_VERSION=2.1.18
+ARG DNSCRYPT_VERSION=2.1.20
 
 RUN apk add --no-cache \
     ca-certificates \
