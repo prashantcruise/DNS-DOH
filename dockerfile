@@ -61,6 +61,6 @@ EXPOSE 5053/tcp
 EXPOSE 5053/udp
 
 HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
-    CMD-SHELL dig +time=3 +tries=1 @127.0.0.1 -p 5053 cloudflare.com A +short | grep -Eq '^[0-9]+\.' || exit 1
+    CMD ["sh", "-c", "dig +time=3 +tries=1 @127.0.0.1 -p 5053 cloudflare.com A +short | grep -Eq '^[0-9]+\\.'"]
 
 ENTRYPOINT ["/entrypoint.sh"]
