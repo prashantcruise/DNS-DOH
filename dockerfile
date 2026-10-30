@@ -1,13 +1,13 @@
 
+# --------------------------------------------------
+# Builder
+# --------------------------------------------------
 FROM alpine:3.22 AS builder
 
 ARG TARGETARCH
 ARG DNSCRYPT_VERSION=2.1.20
 
-RUN apk add --no-cache \
-    ca-certificates \
-    tar \
-    wget
+RUN apk add --no-cache ca-certificates tar wget
 
 WORKDIR /tmp
 
@@ -21,40 +21,46 @@ RUN set -eux; \
     URL="https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/${DNSCRYPT_VERSION}/dnscrypt-proxy-linux_${ARCH}-${DNSCRYPT_VERSION}.tar.gz"; \
     wget -O dnscrypt-proxy.tar.gz "${URL}"; \
     tar xzf dnscrypt-proxy.tar.gz; \
-    install -m 0755 "linux-${ARCH}/dnscrypt-proxy" /tmp/dnscrypt-proxy
+    test -x "linux-${ARCH}/dnscrypt-proxy"; \
+    install -m 0755 "linux-${ARCH}/dnscrypt-proxy" /tmp/dnscrypt-proxy; \
+    /tmp/dnscrypt-proxy -version
 
 
-# Runtime image
+# --------------------------------------------------
+# Runtime
+# --------------------------------------------------
 FROM alpine:3.22
 
 LABEL maintainer="Prashant Kumar"
+LABEL description="DNSCrypt Proxy with DoH and ODoH support"
 
 RUN apk add --no-cache \
     ca-certificates \
     bind-tools \
     tzdata \
     && update-ca-certificates \
-    && mkdir -p /config
+    && addgroup -S dnsuser \
+    && adduser -S -G dnsuser dnsuser \
+    && mkdir -p /config \
+    && chown -R dnsuser:dnsuser /config
 
 COPY --from=builder /tmp/dnscrypt-proxy /usr/local/bin/dnscrypt-proxy
 
-COPY dnscrypt-proxy.toml /config/dnscrypt-proxy.toml
+COPY --chown=dnsuser:dnsuser dnscrypt-proxy.toml /config/dnscrypt-proxy.toml
 COPY entrypoint.sh /entrypoint.sh
 
-RUN addgroup -S dnsuser \
-    && adduser -S -G dnsuser dnsuser \
-    && chown -R dnsuser:dnsuser /config \
-    && chmod 0755 /entrypoint.sh \
+RUN chmod 0755 /entrypoint.sh \
     && chmod 0755 /usr/local/bin/dnscrypt-proxy
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV TZ=Asia/Kolkata
 
 USER dnsuser
 
 EXPOSE 5053/tcp
 EXPOSE 5053/udp
 
-HEALTHCHECK --interval=120s --timeout=10s --start-period=30s --retries=3 \
-    CMD dig @127.0.0.1 -p 5053 cloudflare.com +short | grep -qE '[0-9a-fA-F:]' || exit 1
+HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
+    CMD-SHELL dig +time=3 +tries=1 @127.0.0.1 -p 5053 cloudflare.com A +short | grep -Eq '^[0-9]+\.' || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
