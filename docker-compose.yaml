@@ -1,35 +1,25 @@
-version: "3.8"
-
 services:
-  cloudflared:
-    image: my-cloudflared:latest
+  dnscrypt-odoh:
+    image: dnscrypt-doh:latest
     build:
       context: .
-      dockerfile: Dockerfile
-      args:
-        ARCH: amd64        # Change to arm / arm64 if needed
-    container_name: cf-doh
+      dockerfile: dockerfile
+    container_name: dnscrypt-odoh
     environment:
-      CLOUDFLARED_OPTS: >
-        --upstream https://1.1.1.1/dns-query
-        --upstream https://1.0.0.1/dns-query
-        --address 0.0.0.0
-        --port 5053
+      DNSCRYPT_CONFIG: /config/dnscrypt-proxy-odoh.toml
+      DNSCRYPT_PORT: "5053"
     ports:
       - "5053:5053/udp"
       - "5053:5053/tcp"
     restart: unless-stopped
-    networks:
-      - doh-net
 
-    # ✅ Healthcheck — detects if DoH stops responding
-    healthcheck:
-      test: ["CMD-SHELL", "dig @127.0.0.1 -p 5053 cloudflare.com +short || exit 1"]
-      interval: 60s      # check every 60 seconds
-      timeout: 10s       # fail check if no reply in 10 seconds
-      retries: 3         # mark unhealthy after 3 consecutive failures
-      start_period: 20s  # grace period after container starts
-
-networks:
-  doh-net:
-    driver: bridge
+  dnscrypt-doh:
+    image: dnscrypt-doh:latest
+    container_name: dnscrypt-doh
+    environment:
+      DNSCRYPT_CONFIG: /config/dnscrypt-proxy-doh.toml
+      DNSCRYPT_PORT: "5054"
+    ports:
+      - "5054:5054/udp"
+      - "5054:5054/tcp"
+    restart: unless-stopped
