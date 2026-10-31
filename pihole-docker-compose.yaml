@@ -1,0 +1,81 @@
+networks:
+  dns_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.0.0/24
+
+services:
+  pihole:
+    container_name: pihole
+    hostname: pihole
+    image: pihole/pihole:2026.10.0
+    networks:
+      dns_net:
+        ipv4_address: 172.16.0.7
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "85:80/tcp"
+    environment:
+      TZ: "Asia/Kolkata"
+      FTLCONF_webserver_api_password: "${PIHOLE_PASSWORD:?set PIHOLE_PASSWORD in .env}"
+      FTLCONF_dns_listeningMode: "all"
+      # ODoH first, plain DoH only if ODoH fails
+      FTLCONF_dns_upstreams: "172.16.0.8#5053;172.16.0.9#5054"
+      FTLCONF_misc_dnsmasq_lines: "strict-order"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - "./etc-pihole:/etc/pihole"
+      - "./etc-dnsmasq.d:/etc/dnsmasq.d"
+    depends_on:
+      - dnscrypt-odoh
+      - dnscrypt-doh
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+
+  # Primary: ODoH only
+  dnscrypt-odoh:
+    image: prashantcruise/cloudflared:latest
+    container_name: dnscrypt-odoh
+    networks:
+      dns_net:
+        ipv4_address: 172.16.0.8
+    environment:
+      DNSCRYPT_CONFIG: /config/dnscrypt-proxy-odoh.toml
+      DNSCRYPT_PORT: "5053"
+    volumes:
+      - "./dnscrypt-proxy-odoh.toml:/config/dnscrypt-proxy-odoh.toml:ro"
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.3
+    healthcheck:
+      test: ["CMD-SHELL", "dig +time=3 +tries=1 @127.0.0.1 -p 5053 cloudflare.com A +short | grep -Eq '^[0-9]+\\.'"]
+      interval: 120s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Fallback: plain DoH only
+  dnscrypt-doh:
+    image: prashantcruise/cloudflared:latest
+    container_name: dnscrypt-doh
+    networks:
+      dns_net:
+        ipv4_address: 172.16.0.9
+    environment:
+      DNSCRYPT_CONFIG: /config/dnscrypt-proxy-doh.toml
+      DNSCRYPT_PORT: "5054"
+    volumes:
+      - "./dnscrypt-proxy-doh.toml:/config/dnscrypt-proxy-doh.toml:ro"
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.3
+    healthcheck:
+      test: ["CMD-SHELL", "dig +time=3 +tries=1 @127.0.0.1 -p 5054 cloudflare.com A +short | grep -Eq '^[0-9]+\\.'"]
+      interval: 120s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

@@ -6,7 +6,7 @@ services:
       dockerfile: dockerfile
     container_name: dnscrypt-odoh
     environment:
-      DNSCRYPT_CONFIG: /config/dnscrypt-proxy.toml
+      DNSCRYPT_CONFIG: /config/dnscrypt-proxy-odoh.toml
       DNSCRYPT_PORT: "5053"
     ports:
       - "5053:5053/udp"

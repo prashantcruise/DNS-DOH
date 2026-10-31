@@ -1,0 +1,159 @@
+# =============================================================================
+# dnscrypt-proxy configuration
+# FALLBACK instance: plain DoH only (used when the ODoH instance on 5053 fails)
+# Pi-hole handles DNS filtering
+# =============================================================================
+
+
+# =============================================================================
+# Global
+# =============================================================================
+
+# Pi-hole and dnscrypt-proxy run on the same host.
+listen_addresses = ['0.0.0.0:5054']
+
+max_clients = 250
+
+
+# =============================================================================
+# Server Selection
+# =============================================================================
+
+ipv4_servers = true
+ipv6_servers = false
+
+# DNSCrypt disabled
+dnscrypt_servers = false
+
+# Encrypted DNS protocols
+doh_servers = true
+odoh_servers = false
+
+
+# =============================================================================
+# Security Requirements
+# =============================================================================
+
+# Require DNSSEC-capable resolvers
+require_dnssec = true
+
+# Prefer resolvers declaring no logging
+require_nolog = true
+
+# No upstream filtering (Pi-hole handles filtering)
+require_nofilter = true
+
+disabled_server_names = []
+
+
+# =============================================================================
+# Load Balancing
+# =============================================================================
+
+lb_strategy = 'p2'
+lb_estimator = true
+
+
+# =============================================================================
+# Connection Settings
+# =============================================================================
+
+timeout = 5000
+keepalive = 30
+
+force_tcp = false
+
+# Keep HTTP/2 initially
+http3 = false
+http3_probe = false
+
+
+# =============================================================================
+# TLS
+# =============================================================================
+
+# Disable TLS session tickets
+tls_disable_session_tickets = true
+
+# Use Go's default secure TLS cipher negotiation.
+# Do not restrict cipher suites manually.
+
+
+# =============================================================================
+# Bootstrap DNS
+# =============================================================================
+
+bootstrap_resolvers = [
+  '1.1.1.1:53',
+  '1.0.0.1:53'
+]
+
+ignore_system_dns = true
+
+netprobe_timeout = 60
+netprobe_address = '1.1.1.1:53'
+
+
+# =============================================================================
+# Certificate Refresh
+# =============================================================================
+
+cert_refresh_delay = 240
+
+
+# =============================================================================
+# Query Cache
+# =============================================================================
+
+cache = true
+
+cache_size = 4096
+
+cache_min_ttl = 600
+cache_max_ttl = 86400
+
+cache_neg_min_ttl = 60
+cache_neg_max_ttl = 600
+
+
+# =============================================================================
+# Query Safety
+# =============================================================================
+
+block_unqualified = true
+block_undelegated = true
+
+
+# =============================================================================
+# Logging
+# =============================================================================
+
+# Query logging intentionally disabled.
+# No [query_log] section.
+
+
+# =============================================================================
+# Resolver Sources
+# =============================================================================
+
+[sources]
+
+
+# -----------------------------------------------------------------------------
+# Public DoH resolvers
+# -----------------------------------------------------------------------------
+
+[sources.'public-resolvers']
+
+urls = [
+  'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md',
+  'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md'
+]
+
+cache_file = '/config/public-resolvers.md'
+
+minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+
+refresh_delay = 72
+
+prefix = ''

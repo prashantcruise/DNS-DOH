@@ -1,7 +1,6 @@
-```toml
 # =============================================================================
 # dnscrypt-proxy configuration
-# DoH + ODoH / DNSSEC / No query logging / No upstream filtering
+# PRIMARY instance: ODoH only (queries go through relays) / DNSSEC / No query logging
 # Pi-hole handles DNS filtering
 # =============================================================================
 
@@ -27,7 +26,7 @@ ipv6_servers = false
 dnscrypt_servers = false
 
 # Encrypted DNS protocols
-doh_servers = true
+doh_servers = false
 odoh_servers = true
 
 
@@ -141,16 +140,53 @@ block_undelegated = true
 
 
 # -----------------------------------------------------------------------------
-# Public DoH resolvers
+# ODoH targets
 # -----------------------------------------------------------------------------
 
-[sources.'public-resolvers']
+[sources.'odoh-servers']
 
 urls = [
-  'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md',
-  'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md'
+  'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-servers.md',
+  'https://download.dnscrypt.info/resolvers-list/v3/odoh-servers.md'
 ]
 
-cache_file = '/config/public-resolvers.md'
+cache_file = '/config/odoh-servers.md'
 
-min
+minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+
+refresh_delay = 72
+
+prefix = ''
+
+
+# -----------------------------------------------------------------------------
+# ODoH relays
+# -----------------------------------------------------------------------------
+
+[sources.'odoh-relays']
+
+urls = [
+  'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-relays.md',
+  'https://download.dnscrypt.info/resolvers-list/v3/odoh-relays.md'
+]
+
+cache_file = '/config/odoh-relays.md'
+
+minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+
+refresh_delay = 72
+
+prefix = ''
+
+
+# =============================================================================
+# ODoH relay routing (auto-select a compatible relay for each ODoH target)
+# =============================================================================
+
+[anonymized_dns]
+
+routes = [
+  { server_name = '*', via = ['*'] }
+]
+
+skip_incompatible = true

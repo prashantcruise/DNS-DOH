@@ -46,7 +46,7 @@ RUN apk add --no-cache \
 
 COPY --from=builder /tmp/dnscrypt-proxy /usr/local/bin/dnscrypt-proxy
 
-COPY --chown=dnsuser:dnsuser dnscrypt-proxy.toml dnscrypt-proxy-doh.toml /config/
+COPY --chown=dnsuser:dnsuser dnscrypt-proxy-odoh.toml dnscrypt-proxy-doh.toml /config/
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod 0755 /entrypoint.sh \
