@@ -46,7 +46,7 @@ RUN apk add --no-cache \
 
 COPY --from=builder /tmp/dnscrypt-proxy /usr/local/bin/dnscrypt-proxy
 
-COPY --chown=dnsuser:dnsuser dnscrypt-proxy.toml /config/dnscrypt-proxy.toml
+COPY --chown=dnsuser:dnsuser dnscrypt-proxy.toml dnscrypt-proxy-doh.toml /config/
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod 0755 /entrypoint.sh \
@@ -54,13 +54,16 @@ RUN chmod 0755 /entrypoint.sh \
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV TZ=Asia/Kolkata
+ENV DNSCRYPT_PORT=5053
 
 USER dnsuser
 
 EXPOSE 5053/tcp
 EXPOSE 5053/udp
+EXPOSE 5054/tcp
+EXPOSE 5054/udp
 
 HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
-    CMD ["sh", "-c", "dig +time=3 +tries=1 @127.0.0.1 -p 5053 cloudflare.com A +short | grep -Eq '^[0-9]+\\.'"]
+    CMD ["sh", "-c", "dig +time=3 +tries=1 @127.0.0.1 -p $DNSCRYPT_PORT cloudflare.com A +short | grep -Eq '^[0-9]+\\.'"]
 
 ENTRYPOINT ["/entrypoint.sh"]
